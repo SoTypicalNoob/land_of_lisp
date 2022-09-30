@@ -10,6 +10,7 @@
                                    (chain garden)
                                    (frog garden)))
 (defparameter *location* 'living-room)
+(defparameter *allowed-commands* '(look walk pickup inventory))
 
 (assoc 'garden *nodes*)
 
@@ -65,3 +66,27 @@
 ;; Checking Our Inventory
 (defun inventory ()
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
+
+(defun say-hello ()
+  (princ "Please type your name:")
+  (let ((name (read-line)))
+    (princ "Nice to meet you, ")
+    (princ name)))
+
+(defun game-repl ()
+  (let ((cmd (game-read)))
+    (unless (eq (car cmd) 'quit)
+      (game-print (game-eval cmd))
+      (game-repl))))
+
+(defun game-read ()
+  (let ((cmd (read-from-string
+              (concatenate 'string "(" (read-line) ")"))))
+    (flet ((quote-it (x)
+             (list 'quote x)))
+      (cons (car cmd) (mapcar #'quote-it (cdr cmd))))))
+
+(defun game-eval (sexp)
+  (if (member (car sexp) *allowed-commands*)
+      (eval sexp)
+      '(i do not know that command.)))
