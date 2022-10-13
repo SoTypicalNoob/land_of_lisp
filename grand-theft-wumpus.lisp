@@ -1,4 +1,4 @@
-(load "graph-util.lisp")
+;; (load "graph-util.lisp")
 
 ;; Defining the Edges of Congestion City
 (defparameter *congestion-city-nodes* nil)
@@ -205,3 +205,23 @@
                       (princ "You ran into a Glow Worm Gang! You're now at ")
                       (princ new-pos)
                       (handle-new-place nil new-pos nil))))))
+
+;; A Faster Grand Theft Wumpus Using Hash Tables
+(defun hash-edges (edge-list)
+  (let ((tab (make-hash-table)))
+    (mapc (lambda (x)
+            (let ((node (car x)))
+              (push (cdr x) (gethash node tab))))
+          edge-list)
+    tab))
+
+(defun get-connected-hash (node edge-tab)
+  (let ((visited (make-hash-table)))
+    (labels ((traverse (node)
+               (unless (gethash node visited)
+                 (setf (gethash node visited) t)
+                 (mapc (lambda (edge)
+                         (traverse edge))
+                       (gethash node edge-tab)))))
+      (traverse node))
+    visited))
