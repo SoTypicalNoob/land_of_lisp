@@ -194,3 +194,38 @@
   (cond ((null (caddr tree)) (announce-winner (cadr tree)))
         ((zerop (car tree)) (play-vs-computer (handle-human tree)))
         (t (play-vs-computer (handle-computer tree)))))
+
+;; Making Dice of Doom Faster
+(defparameter *board-size* 3)
+(defparameter *board-hexnum* (* *board-size* *board-size*))
+
+;;; Closures / Memoization
+
+;;; Memoizing the neighbors Function
+(let ((old-neighbors (symbol-function 'neighbors))
+      (previous (make-hash-table)))
+  (defun neighbors (pos)
+    (or (gethash pos previous)
+        (setf (gethash pos previous) (funcall old-neighbors pos)))))
+;; Be careful not to declare the memoized version of the neighbors function more than once,
+;; without also redeclaring the original version of the function.
+;; Otherwise, the neighbors function will be wrapped in multiple unsightly layers of memoization,
+;; since there are no checks if the memoization has already been done.
+
+;;; Memoizing the Game Tree
+(let ((old-game-tree (symbol-function 'game-tree))
+      (previous (make-hash-table :test #'equalp)))
+  (defun game-tree (&rest rest)
+    (or (gethash rest previous)
+        (setf (gethash rest previous) (apply old-game-tree rest)))))
+
+;;; Memoizing the rate-position Function
+(let ((old-rate-position (symbol-function 'rate-position))
+      (previous (make-hash-table)))
+  (defun rate-position (tree player)
+    (let ((tab (gethash player previous)))
+      (unless tab
+        (setf tab (setf (gethash player previous) (make-hash-table))))
+      (or (gethash tree tab)
+          (setf (gethash tree tab)
+                (funcall old-rate-position tree player))))))
