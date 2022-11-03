@@ -229,3 +229,18 @@
       (or (gethash tree tab)
           (setf (gethash tree tab)
                 (funcall old-rate-position tree player))))))
+
+;;; Tail Call Optimization in Dice of Doom
+(defun add-new-dice (board player spare-dice)
+  (labels ((f (lst n acc)
+             (cond ((zerop n) (append (reverse acc) lst))
+                   ((null lst) (reverse acc))
+                   (t (let ((cur-player (caar lst))
+                            (cur-dice (cadar lst)))
+                        (if (and (eq cur-player player)
+                                 (< cur-dice *max-dice*))
+                            (f (cdr lst)
+                               (1- n)
+                               (cons (list cur-player (1+ cur-dice)) acc))
+                            (f (cdr lst) n (cons (car lst) acc))))))))
+    (board-array (f (coerce board 'list) spare-dice ()))))
