@@ -30,6 +30,41 @@
 (defun lazy-null (x)
   (not (force x)))
 
+;;; Converting Between Regular Lists and Lazy Lists
 (defun make-lazy (lst)
   (lazy (when lst
           (cons (car lst) (make-lazy (cdr lst))))))
+
+(defun take (n lst)
+  (unless (or (zerop n) (lazy-null lst))
+    (cons (lazy-car lst) (take (1- n) (lazy-cdr lst)))))
+
+(defun take-all (lst)
+  (unless (lazy-null lst)
+    (cons (lazy-car lst) (take-all (lazy-cdr lst)))))
+
+;;; Mapping and Searcing Across Lazy Lists
+(defun lazy-mapcar (fun lst)
+  (lazy (unless (lazy-null lst)
+          (cons (funcall fun (lazy-car lst))
+                (lazy-mapcar fun (lazy-cdr lst))))))
+
+(defun lazy-mapcan (fun lst)
+  (labels ((f (lst-cur)
+             (if (lazy-null lst-cur)
+                 (force (lazy-mapcan fun (lazy-cdr lst)))
+                 (cons (lazy-car lst-cur) (lazy (f (lazy-cdr lst-cur)))))))
+    (lazy (unless (lazy-null lst)
+            (f (funcall fun (lazy-car lst)))))))
+
+(defun lazy-find-if (fun lst)
+  (unless (lazy-null lst)
+    (let ((x (lazy-car lst)))
+      (if (funcall fun x)
+          x
+          (lazy-find-if fun (lazy-cdr lst))))))
+
+(defun lazy-nth (n lst)
+  (if (zerop n)
+      (lazy-car lst)
+      (lazy-nth (1- n) (lazy-cdr lst))))
